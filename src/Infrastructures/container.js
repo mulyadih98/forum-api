@@ -12,6 +12,8 @@ const pool = require('./database/postgres/pool');
 const UserRepository = require('../Domains/users/UserRepository');
 const PasswordHash = require('../Applications/security/PasswordHash');
 const UserRepositoryPostgres = require('./repository/UserRepositoryPostgres');
+const ThreadRepositoryPostgres = require('./repository/ThreadRepositoryPostgres');
+const ThreadReposiroty = require('../Domains/threads/ThreadRepository');
 const BcryptPasswordHash = require('./security/BcryptPasswordHash');
 
 // use case
@@ -23,6 +25,7 @@ const AuthenticationRepository = require('../Domains/authentications/Authenticat
 const AuthenticationRepositoryPostgres = require('./repository/AuthenticationRepositoryPostgres');
 const LogoutUserUseCase = require('../Applications/use_case/LogoutUserUseCase');
 const RefreshAuthenticationUseCase = require('../Applications/use_case/RefreshAuthenticationUseCase');
+const AddThreadUseCase = require('../Applications/use_case/AddThreadUseCase');
 
 // creating container
 const container = createContainer();
@@ -42,6 +45,19 @@ container.register([
         },
       ],
     },
+  },{
+    key: ThreadReposiroty.name,
+    Class: ThreadRepositoryPostgres,
+    parameter: {
+      dependencies: [
+        {
+          concrete: pool,
+        },
+        {
+          concrete: nanoid,
+        }
+      ]
+    }
   },
   {
     key: AuthenticationRepository.name,
@@ -96,6 +112,18 @@ container.register([
         },
       ],
     },
+  },{
+    key: AddThreadUseCase.name,
+    Class: AddThreadUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'threadRepository',
+          internal: ThreadReposiroty.name,
+        }
+      ]
+    }
   },
   {
     key: LoginUserUseCase.name,

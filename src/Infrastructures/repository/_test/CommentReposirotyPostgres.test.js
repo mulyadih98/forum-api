@@ -1,4 +1,6 @@
 const CommentsTableTestHelper = require('../../../../tests/CommentsTableTestHelper');
+const AuthorizationError = require('../../../Commons/exceptions/AuthorizationError');
+const NotFoundError = require('../../../Commons/exceptions/NotFoundError');
 const AddComment = require('../../../Domains/comment/entities/AddComment');
 const AddedComment = require('../../../Domains/comment/entities/AddedComment');
 const pool = require('../../database/postgres/pool');
@@ -63,6 +65,52 @@ describe('CommentRepositoryPostgres', () => {
           owner: 'user-123',
         })
       );
+    });
+  });
+
+  describe('verifyCommentOwner function', () => {
+    it('should throw NotFoundError if comment not available', async () => {
+      // Arrange
+      const payload = {
+        owner: 'owner-test',
+        commentId: 'test-coment',
+      };
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+      // Action and Assert
+      await expect(
+        commentRepositoryPostgres.verifyCommentOwner(payload)
+      ).rejects.toThrowError(NotFoundError);
+    });
+
+    it('should throw AuthorizationError if owner not the owner of the comments', async () => {
+      // Arrange
+      const payload = {
+        owner: 'owner-test',
+        id: 'test-coment',
+      };
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+      await CommentsTableTestHelper.addComment(payload);
+      // Action and Assert
+      await expect(
+        commentRepositoryPostgres.verifyCommentOwner({
+          id: payload.id,
+          owner: 'bukan-ouner',
+        })
+      ).rejects.toThrowError(AuthorizationError);
+    });
+  });
+
+  describe('deleteComment function', () => {
+    it('should be delete from comments', async () => {
+      // Arrange
+      const id = 'coment-123';
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+      await CommentsTableTestHelper.addComment({ id });
+      // Action
+      await commentRepositoryPostgres.deleteComment(id);
+      // Assert
+      const comment = await CommentsTableTestHelper.findCommentById(id);
+      expect(comment[0]['is_deleted']).toEqual(true);
     });
   });
 });

@@ -5,10 +5,11 @@ const AddComment = require('../../../Domains/comment/entities/AddComment');
 const AddedComment = require('../../../Domains/comment/entities/AddedComment');
 const pool = require('../../database/postgres/pool');
 const CommentRepositoryPostgres = require('../CommentRepositoryPostgres');
-
+const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
 describe('CommentRepositoryPostgres', () => {
   afterEach(async () => {
     await CommentsTableTestHelper.cleanTable();
+    await UsersTableTestHelper.cleanTable();
   });
 
   afterAll(async () => {
@@ -111,6 +112,30 @@ describe('CommentRepositoryPostgres', () => {
       // Assert
       const comment = await CommentsTableTestHelper.findCommentById(id);
       expect(comment[0]['is_deleted']).toEqual(true);
+    });
+  });
+
+  describe('getCommentsByThread', () => {
+    it('should return content **komentar telah dihapus** if comments was deleted', async () => {
+      // Arrange
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      const coment1 = await CommentsTableTestHelper.addComment({
+        thread_id: 'test-123',
+      });
+      const comment2 = await CommentsTableTestHelper.addComment({
+        id: 'test-234',
+        thread_id: 'test-123',
+      });
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+      // Action
+      const deleteComment = await commentRepositoryPostgres.deleteComment(
+        comment2.id
+      );
+      const result = await commentRepositoryPostgres.getCommentsByThread(
+        'test-123'
+      );
+      // Assert
+      expect(result[1].content).toEqual('**komentar telah dihapus**');
     });
   });
 });

@@ -5,8 +5,6 @@ const createServer = require('../createServer');
 const CommentsTableTestHelper = require('../../../../tests/CommentsTableTestHelper');
 const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
 const ThreadsTableTestHelper = require('../../../../tests/ThreadsTableTestHelper');
-const { headers } = require('@hapi/hapi/lib/cors');
-
 describe('/threads/{threadid}/comments endpoint', () => {
   afterAll(async () => {
     await pool.end();
@@ -194,11 +192,40 @@ describe('/threads/{threadid}/comments endpoint', () => {
             Authorization: `Bearer ${accessToken}`,
           },
         });
-
         // Assert
         responseJson = JSON.parse(response.payload);
         expect(response.statusCode).toEqual(200);
         expect(responseJson.status).toEqual('success');
+      });
+    });
+
+    describe('when GET /threads/{threadId}', () => {
+      it('should response return 200 and correct property', async () => {
+        // Arrange
+        const threadId = 'test-thread-id';
+        await UsersTableTestHelper.addUser({ id: 'test-user' });
+        await ThreadsTableTestHelper.addThread({
+          id: threadId,
+          owner: 'test-user',
+        });
+        await CommentsTableTestHelper.addComment({
+          thread_id: threadId,
+          owner: 'test-user',
+          content: 'test comment',
+        });
+
+        const server = await createServer(container);
+        // Action
+        const response = await server.inject({
+          method: 'GET',
+          url: `/threads/${threadId}`,
+        });
+
+        const responseJson = JSON.parse(response.payload);
+        const responseComment = responseJson.data.thread.comments;
+        expect(response.statusCode).toEqual(200);
+        expect(responseJson.status).toEqual('success');
+        expect(responseComment).toHaveLength(1);
       });
     });
   });

@@ -5,6 +5,7 @@ const createServer = require('../createServer');
 const CommentsTableTestHelper = require('../../../../tests/CommentsTableTestHelper');
 const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
 const ThreadsTableTestHelper = require('../../../../tests/ThreadsTableTestHelper');
+const { headers } = require('@hapi/hapi/lib/cors');
 
 describe('/threads/{threadid}/comments endpoint', () => {
   afterAll(async () => {
@@ -95,6 +96,110 @@ describe('/threads/{threadid}/comments endpoint', () => {
       expect(responseJson.data.addedComment.content).toEqual(
         requestPayload.content
       );
+    });
+  });
+
+  describe('when DELETE /threads/{threadId/comments}', () => {
+    it('should response 404 if thread of comment not found', async () => {
+      // Arrange
+      const requestPayload = {
+        content: 'test comment',
+      };
+      const accessToken = await ServerTestHelper.getAccessToken();
+      const server = await createServer(container);
+
+      // Action
+      const response = await server.inject({
+        method: 'POST',
+        url: '/threads/123/comments',
+        payload: requestPayload,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      // Assert
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(responseJson.status).toEqual('fail');
+      expect(responseJson.message).toEqual('Thread tidak ditemukan');
+    });
+
+    describe('verifyCommentOwner', () => {
+      it('should response 404 if comment not found', async () => {
+        // Arrange
+        await ThreadsTableTestHelper.addThread({ id: 'test-123' });
+        const accessToken = await ServerTestHelper.getAccessToken();
+        const server = await createServer(container);
+        // Action
+        const response = await server.inject({
+          method: 'DELETE',
+          url: '/threads/test-123/comments/1',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        // Assert
+        const responseJson = JSON.parse(response.payload);
+        expect(response.statusCode).toEqual(404);
+        expect(responseJson.status).toEqual('fail');
+        expect(responseJson.message).toEqual('Comment tidak ditemukan');
+      });
+
+      it('should response 403 if comment not found', async () => {
+        // Arrange
+        await ThreadsTableTestHelper.addThread({ id: 'test-123' });
+        const accessToken = await ServerTestHelper.getAccessToken();
+        await CommentsTableTestHelper.addComment({
+          id: 'test-comment-123',
+          owner: 'user-test-authorization',
+        });
+        const server = await createServer(container);
+
+        // Action
+        const response = await server.inject({
+          method: 'DELETE',
+          url: '/threads/test-123/comments/test-comment-123',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        // Assert
+        const responseJson = JSON.parse(response.payload);
+        expect(response.statusCode).toEqual(403);
+        expect(responseJson.status).toEqual('fail');
+        expect(responseJson.message).toEqual(
+          'Anda tidak berhak mengakses comment ini'
+        );
+      });
+
+      it('should response return 200 soft delete comment', async () => {
+        // Arrange
+        await ThreadsTableTestHelper.addThread({ id: 'thread-test-123' });
+        const accessToken = await ServerTestHelper.getAccessToken();
+        const { id, thread_id: thread } =
+          await CommentsTableTestHelper.addComment({
+            id: 'comment-test-123',
+            owner: 'user-123',
+            thread_id: 'thread-test-123',
+          });
+        const server = await createServer(container);
+        // Action
+        const response = await server.inject({
+          method: 'DELETE',
+          url: `/threads/${thread}/comments/${id}`,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        // Assert
+        responseJson = JSON.parse(response.payload);
+        expect(response.statusCode).toEqual(200);
+        expect(responseJson.status).toEqual('success');
+      });
     });
   });
 });

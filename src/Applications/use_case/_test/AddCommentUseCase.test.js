@@ -41,6 +41,9 @@ describe('AddCommentUseCase', () => {
 
     // Assert
     expect(storeComment).toStrictEqual(expectedAddedComment);
+    expect(mockThreadRepository.getThreadById).toBeCalledWith(
+      useCasePayload.thread_id
+    );
     expect(mockCommentRepository.addComment).toBeCalledWith(
       new AddComment({
         content: useCasePayload.content,

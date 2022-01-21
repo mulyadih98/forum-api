@@ -44,7 +44,14 @@ describe('/threads/{threadid}/comments endpoint', () => {
 
     it('should response 400 if payload not content needed property', async () => {
       // Arrange
-      await ThreadsTableTestHelper.addThread({ id: 'test-123' });
+      await UsersTableTestHelper.addUser({
+        id: 'test-comments-123',
+        username: 'test',
+      });
+      await ThreadsTableTestHelper.addThread({
+        id: 'test-123',
+        owner: 'test-comments-123',
+      });
       const accessToken = await ServerTestHelper.getAccessToken();
       const server = await createServer(container);
 
@@ -72,7 +79,14 @@ describe('/threads/{threadid}/comments endpoint', () => {
       const requestPayload = {
         content: 'test comment',
       };
-      await ThreadsTableTestHelper.addThread({ id: 'test-123' });
+      await UsersTableTestHelper.addUser({
+        id: 'test-comments-201',
+        username: 'user-201',
+      });
+      await ThreadsTableTestHelper.addThread({
+        id: 'test-123',
+        owner: 'test-comments-201',
+      });
       const accessToken = await ServerTestHelper.getAccessToken();
       const server = await createServer(container);
 
@@ -126,7 +140,14 @@ describe('/threads/{threadid}/comments endpoint', () => {
     describe('verifyCommentOwner', () => {
       it('should response 404 if comment not found', async () => {
         // Arrange
-        await ThreadsTableTestHelper.addThread({ id: 'test-123' });
+        await UsersTableTestHelper.addUser({
+          id: 'test-user-404',
+          username: 'user-404',
+        });
+        await ThreadsTableTestHelper.addThread({
+          id: 'test-123',
+          owner: 'test-user-404',
+        });
         const accessToken = await ServerTestHelper.getAccessToken();
         const server = await createServer(container);
         // Action
@@ -147,11 +168,19 @@ describe('/threads/{threadid}/comments endpoint', () => {
 
       it('should response 403 if comment not found', async () => {
         // Arrange
-        await ThreadsTableTestHelper.addThread({ id: 'test-123' });
+        await UsersTableTestHelper.addUser({
+          id: 'test-user-403',
+          username: 'user-403',
+        });
+        await ThreadsTableTestHelper.addThread({
+          id: 'test-123',
+          owner: 'test-user-403',
+        });
         const accessToken = await ServerTestHelper.getAccessToken();
         await CommentsTableTestHelper.addComment({
           id: 'test-comment-123',
-          owner: 'user-test-authorization',
+          thread_id: 'test-123',
+          owner: 'test-user-403',
         });
         const server = await createServer(container);
 
@@ -175,8 +204,12 @@ describe('/threads/{threadid}/comments endpoint', () => {
 
       it('should response return 200 soft delete comment', async () => {
         // Arrange
-        await ThreadsTableTestHelper.addThread({ id: 'thread-test-123' });
         const accessToken = await ServerTestHelper.getAccessToken();
+        await ThreadsTableTestHelper.addThread({
+          id: 'thread-test-123',
+          owner: 'user-123',
+        });
+
         const { id, thread_id: thread } =
           await CommentsTableTestHelper.addComment({
             id: 'comment-test-123',

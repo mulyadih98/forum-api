@@ -20,13 +20,15 @@ describe('ThreadRepositoryPostgres', () => {
   describe('addThread function', () => {
     it('should persist add thread and return added thread correctly', async () => {
       // Arrange
+      await UsersTableTestHelper.addUser({
+        id: 'thread-test-123',
+        username: 'testthread',
+      });
       const addThread = new AddThread({
         title: 'usecase title',
         body: 'usecase body',
-        owner: 'user-123',
+        owner: 'thread-test-123',
       });
-
-      await UsersTableTestHelper.addUser({ username: 'testthread' });
 
       const fakeIdGenerator = () => '123';
       const threadRepositoryPostgres = new ThreadRepositoryPostgres(
@@ -43,12 +45,15 @@ describe('ThreadRepositoryPostgres', () => {
 
     it('should return added thread correctly', async () => {
       // Arrange
+      await UsersTableTestHelper.addUser({
+        id: 'thread-test-123',
+        username: 'testtread',
+      });
       const addThread = new AddThread({
         title: 'usecase title',
         body: 'usecase body',
-        owner: 'user-123',
+        owner: 'thread-test-123',
       });
-      await UsersTableTestHelper.addUser({ username: 'testtread' });
       const fakeIdGenerator = () => '123';
       const threadRepositoryPostgres = new ThreadRepositoryPostgres(
         pool,
@@ -63,7 +68,7 @@ describe('ThreadRepositoryPostgres', () => {
         new AddedThread({
           id: 'thread-123',
           title: 'usecase title',
-          owner: 'user-123',
+          owner: 'thread-test-123',
         })
       );
     });

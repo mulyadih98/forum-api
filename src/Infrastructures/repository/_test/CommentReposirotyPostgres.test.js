@@ -116,7 +116,7 @@ describe('CommentRepositoryPostgres', () => {
   });
 
   describe('getCommentsByThread', () => {
-    it('should return content **komentar telah dihapus** if comments was deleted', async () => {
+    it('should return is_deleted true if comments was deleted', async () => {
       // Arrange
       await UsersTableTestHelper.addUser({ id: 'user-123' });
       const coment1 = await CommentsTableTestHelper.addComment({
@@ -128,14 +128,12 @@ describe('CommentRepositoryPostgres', () => {
       });
       const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
       // Action
-      const deleteComment = await commentRepositoryPostgres.deleteComment(
-        comment2.id
-      );
+      await commentRepositoryPostgres.deleteComment(comment2.id);
       const result = await commentRepositoryPostgres.getCommentsByThread(
         'test-123'
       );
       // Assert
-      expect(result[1].content).toEqual('**komentar telah dihapus**');
+      expect(result[1].is_deleted).toEqual(true);
     });
   });
 });

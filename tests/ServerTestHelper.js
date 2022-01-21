@@ -11,7 +11,7 @@ const ServerTestHelper = {
     };
     await UsersTableTestHelper.addUser(payloadUser);
     return Jwt.token.generate(payloadUser, process.env.ACCESS_TOKEN_KEY);
-  }
-}
+  },
+};
 
 module.exports = ServerTestHelper;
